@@ -15,7 +15,6 @@ resource "google_project" "project" {
   billing_account     = data.google_billing_account.billing.id
   auto_create_network = var.auto_create_network
   labels              = var.labels
-  depends_on          = [data.google_billing_account.billing]
 
   lifecycle {
     ignore_changes = [billing_account,]
