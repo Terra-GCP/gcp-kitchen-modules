@@ -24,6 +24,6 @@ variable "budget_notify_name" {
 }
 
 variable "email_address" {
-  description = "The email address to whom budget notification to be sent"
-  type        = string
+  description = "The email addresses to whom budget notification to be sent"
+  type        = list(any)
 }
