@@ -1,7 +1,7 @@
 resource "google_project_service" "gcp_apis" {
   #for_each                   = toset(var.gcp_apis_list)
   for_each = {
-    var.gcp_apis_list = "${var.project_id}"
+    "${var.gcp_apis_list}" = "${var.project_id}"
   }
   project                    = each.value
   service                    = each.key
