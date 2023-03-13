@@ -21,7 +21,7 @@ resource "google_billing_budget" "budget" {
     }
   }
   all_updates_rule {
-    monitoring_notification_channels = [google_monitoring_notification_channel.budget_notify.*.id]
+    monitoring_notification_channels = [for n in google_monitoring_notification_channel.budget_notify: google_monitoring_notification_channel.budget_notify.id]
     disable_default_iam_recipients = true
   }
 }
