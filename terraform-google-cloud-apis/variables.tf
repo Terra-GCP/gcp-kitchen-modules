@@ -1,6 +1,6 @@
 variable "project_id" {
   description = "The GCP projects you want to enable APIs on"
-  type        = list(any)
+  type        = string
 }
 
 variable "gcp_apis_list" {
