@@ -17,7 +17,7 @@ resource "google_project" "project" {
   labels              = var.labels
 
   lifecycle {
-    ignore_changes = []
+    ignore_changes = [billing_account]
   }
 
 }
