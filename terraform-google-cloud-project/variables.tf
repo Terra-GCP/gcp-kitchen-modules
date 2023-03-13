@@ -1,6 +1,6 @@
 variable "billing_account_name" {
   description = "The name of the billing account to associate this project with"
-  sensitive = true
+  sensitive   = true
   type        = string
 }
 
