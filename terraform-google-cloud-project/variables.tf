@@ -1,4 +1,4 @@
-variable "billing_account_name" {
+variable "billing_account_id" {
   description = "The name of the billing account to associate this project with"
   sensitive   = true
   type        = string
