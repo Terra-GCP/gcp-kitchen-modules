@@ -19,5 +19,6 @@ resource "google_project" "project" {
   lifecycle {
     ignore_changes = [billing_account]
   }
+  depends_on = [data.google_billing_account.billing]
 
 }
