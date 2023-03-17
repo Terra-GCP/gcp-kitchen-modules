@@ -1,3 +1,5 @@
+/// PERMANENT SOLUTION ///
+
 /* data "google_billing_account" "billing" {
   display_name = var.billing_account_name
   open         = true
@@ -22,6 +24,9 @@ resource "google_project" "project" {
   depends_on = [data.google_billing_account.billing]
 
 } */
+
+
+///TEMP SOLUTION////
 
 
 locals {

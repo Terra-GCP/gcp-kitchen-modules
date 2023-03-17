@@ -9,7 +9,7 @@ resource "google_billing_budget" "budget" {
   }
   amount {
     specified_amount {
-      currency_code = "USD"
+      currency_code = "INR"
       units         = var.budget_amount
     }
   }
