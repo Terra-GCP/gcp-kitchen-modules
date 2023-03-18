@@ -8,7 +8,7 @@ variable "display_name" {
   #type        = string
 }
 
-variable "account_id " {
+variable "account_id" {
   description = "The account id to be used for service account"
   #type        = string
 }
