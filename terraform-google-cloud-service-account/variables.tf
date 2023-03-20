@@ -15,7 +15,7 @@ variable "account_id" {
 
 // Key //
 
-variable "sa_key" {
+variable "create_sa_key" {
   description = "The sa key to be created for service account"
   #type        = string
 }
