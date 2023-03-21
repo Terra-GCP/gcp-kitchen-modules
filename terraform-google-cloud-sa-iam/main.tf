@@ -1,5 +1,5 @@
 /******************************************
-  Google Cloud Project IAM Policy
+  Google Cloud SA IAM Policy
  *****************************************/
 resource "google_service_account_iam_binding" "sa_iam" {
   service_account_id  = var.service_account
