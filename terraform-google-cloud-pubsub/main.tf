@@ -13,7 +13,7 @@ resource "google_pubsub_topic" "pubsub_topic" {
 
 resource "google_pubsub_subscription" "subscription" {
   name                       = var.subscription_name
-  topic                      = google_pubsub_topic.pubsub_topic.name
+  topic                      = google_pubsub_topic.pubsub_topic.id
   labels                     = var.labels
 
   # 20 minutes
@@ -28,5 +28,5 @@ resource "google_pubsub_subscription" "subscription" {
   retry_policy {
     minimum_backoff          = var.minimum_backoff 
   }
-  enable_message_ordering = var.enable_message_ordering 
+  enable_message_ordering = var.enable_message_ordering
 }
