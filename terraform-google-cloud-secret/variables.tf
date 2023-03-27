@@ -7,8 +7,8 @@ variable "secret_id" {
 variable "labels" {
   type = map
 }
-variable "auto_replication" {
-  type = bool
+variable "location" {
+  type = string
 }
 variable "secret_data" {
   type = any
