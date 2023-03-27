@@ -1,7 +1,7 @@
 variable "project_id" {
   type        = string
 }
-variable "labels " {
+variable "labels" {
   type = map
 }
 variable "auto_replication" {
