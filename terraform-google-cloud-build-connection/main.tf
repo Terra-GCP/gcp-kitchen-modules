@@ -16,6 +16,7 @@ resource "google_cloudbuildv2_connection" "build_connection" {
 
 resource "google_cloudbuildv2_repository" "repository_connection" {
   provider              = google-beta
+  project               = var.project_id
   location              = var.location 
   name                  = var.repo_name
   parent_connection     = google_cloudbuildv2_connection.build_connection.name
