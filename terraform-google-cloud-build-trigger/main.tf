@@ -15,7 +15,6 @@ git_file_source {
     revision         = var.revision
   }
   pubsub_config {
-    subscription     = var.subscription
     topic            = var.topic
   }
 

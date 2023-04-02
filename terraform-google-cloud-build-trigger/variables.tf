@@ -36,10 +36,6 @@ variable "revision" {
   description = "The revision type of the repo for build trigger to be used"
   type        = string
 }
-variable "subscription" {
-  description = "The pubsub subscription to be used"
-  type        = string
-}
 variable "topic" {
   description = "The pubsub topic to be used"
   type        = string
