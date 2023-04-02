@@ -13,9 +13,9 @@ variable "project_id" {
   description = "The project under which trigger to be created"
   type        = string
 }
-variable "build_logs" {
+/* variable "build_logs" {
   type        = string
-}
+} */
 variable "description" {
   description = "The descriotion of the build trigger to be created"
   type        = string

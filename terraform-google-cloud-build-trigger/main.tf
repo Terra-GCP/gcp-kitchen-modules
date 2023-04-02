@@ -5,7 +5,7 @@ resource "google_cloudbuild_trigger" "build-trigger" {
   location           = var.location
   disabled           = var.disabled
   project            = var.project_id
-  include_build_logs = var.build_logs
+  #include_build_logs = var.build_logs
   description        = var.description
 
 git_file_source {
