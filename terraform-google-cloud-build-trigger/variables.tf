@@ -13,9 +13,6 @@ variable "project_id" {
   description = "The project under which trigger to be created"
   type        = string
 }
-variable "filename" {
-  type        = string
-}
 variable "build_logs" {
   type        = string
 }
