@@ -6,12 +6,29 @@ variable "location" {
   description = "The location under which build trigger to be created"
   type        = string
 }
+variable "disabled" {
+  type        = string
+}
+variable "project_id" {
+  description = "The project under which trigger to be created"
+  type        = string
+}
+variable "filename" {
+  type        = string
+}
+variable "build_logs" {
+  type        = string
+}
 variable "description" {
   description = "The descriotion of the build trigger to be created"
   type        = string
 }
 variable "path" {
   description = "The path of the build trigger template to be used"
+  type        = string
+}
+variable "uri" {
+  description = "The uri of the build trigger template to be used"
   type        = string
 }
 variable "repo_type" {
@@ -30,23 +47,6 @@ variable "topic" {
   description = "The pubsub topic to be used"
   type        = string
 }
-variable "project_id" {
-  description = "The project under which trigger to be created"
-  type        = string
-}
-variable "repo_name" {
-  description = "The repo name to be used"
-  type        = string
-}
-variable "branch_name" {
-  description = "The branch name to be used"
-  type        = string
-}
-variable "tags" {
-  description = "The tags to be used for trigger"
-  type        = list(string)
-}
-variable "logs_bucket" {
-  description = "The bucket to be used for storing logs of trigger"
+variable "approval_required" {
   type        = string
 }
