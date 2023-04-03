@@ -9,19 +9,15 @@ resource "google_cloudbuild_trigger" "build-trigger" {
   #include_build_logs = var.build_logs
   description        = var.description
 
-  repository_event_config {
-    repository = var.repository
-  }
-
   pubsub_config {
     topic            = var.topic
   }
 
-  /* source_to_build {
+  source_to_build {
     uri       = var.uri 
     ref       = var.revision 
     repo_type = var.repo_type 
-  } */
+  }
   
   git_file_source {
     path             = var.path

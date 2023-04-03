@@ -17,9 +17,6 @@ variable "description" {
   description = "The descriotion of the build trigger to be created"
   type        = string
 }
-variable "repository" {
-  type        = string
-}
 variable "path" {
   description = "The path of the build trigger template to be used"
   type        = string
