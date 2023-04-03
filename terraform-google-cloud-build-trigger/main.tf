@@ -17,11 +17,11 @@ resource "google_cloudbuild_trigger" "build-trigger" {
     topic            = var.topic
   }
 
-  source_to_build {
+  /* source_to_build {
     uri       = var.uri 
     ref       = var.revision 
     repo_type = var.repo_type 
-  }
+  } */
   
   git_file_source {
     path             = var.path
