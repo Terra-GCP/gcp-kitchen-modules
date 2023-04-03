@@ -1,6 +1,7 @@
 #.................................. Cloud Build Trigger ...................................#
 
 resource "google_cloudbuild_trigger" "build-trigger" {
+  provider           = google-beta       
   name               = var.trigger_name
   location           = var.location
   disabled           = var.disabled
