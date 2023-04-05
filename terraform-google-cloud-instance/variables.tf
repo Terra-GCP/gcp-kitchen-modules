@@ -56,7 +56,7 @@ variable "can_ip_forward" {
 
 variable "deletion_protection" {
     type = bool
-    default = true
+    default = false
     description = "Enable/Disable deletion protection on the instance"
 }
 
