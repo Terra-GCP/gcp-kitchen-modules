@@ -31,9 +31,9 @@ resource "google_compute_instance" "default" {
       enable_vtpm = var.vtpm
       enable_integrity_monitoring = var.integrity_monitoring 
   }
-  confidential_instance_config {
+  /* confidential_instance_config {
     enable_confidential_compute = var.confidential__mode
-  }
+  } */
 
   service_account {
     # Google recommends custom service accounts that have cloud-platform scope and permissions granted via IAM Roles.
