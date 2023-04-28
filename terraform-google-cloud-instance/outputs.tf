@@ -1,11 +1,4 @@
-output "instance_details" {
-  value       = google_compute_instance.default
-  description = "Google Cloud Instance Details"
-}
-
-
-
-/* output "instance_name" {
+output "instance_name" {
   value       = google_compute_instance.default.name
   description = "Google Cloud Instance name"
 }
@@ -50,4 +43,4 @@ output "instance_maintenance" {
 output "instance_confidential_mode" {
   value       = google_compute_instance.default.confidential_instance_config.*.enable_confidential_compute
   description = "The Confidential Mode status of the VM"
-} */
+}
