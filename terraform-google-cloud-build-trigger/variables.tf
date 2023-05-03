@@ -502,8 +502,8 @@ variable "build" {
                 location                  = ""
                 paths                     = ""
                 timing                    = {
-                    start_time = string
-                    end_time   = string
+                    start_time            = ""
+                    end_time              = ""
                 }
             }
         }
