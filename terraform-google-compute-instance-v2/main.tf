@@ -1,260 +1,213 @@
-resource "google_compute_instance" "instance" {
-  provider                              = google-beta
-  name                                  = var.name
-  machine_type                          = var.machine_type
-  zone                                  = var.zone
-  tags                                  = var.tags
+locals {
+  source_image          = var.source_image != "" ? var.source_image : "ubuntu-2204-lts"
+  source_image_project  = var.source_image_project != "" ? var.source_image_project : "ubuntu-os-cloud"
+  shielded_instance     = var.allow_stopping_for_update == true || var.desired_status == "TERMINATED"
 
-  boot_disk {
-    auto_delete                         = var.auto_delete_boot_disk
-    device_name                         = var.device_name_boot_disk
-    mode                                = var.mode_boot_disk
-    disk_encryption_key_raw             = var.disk_encryption_key_raw_boot_disk != null ? var.disk_encryption_key_raw_boot_disk : null
-    kms_key_self_link                   = var.kms_key_self_link_boot_disk != null ? var.kms_key_self_link_boot_disk : null
-    source                              = var.source_boot_disk
-
-    initialize_params {
-        size                            = var.size_boot_disk
-        type                            = var.type_boot_disk
-        image                           = var.image_boot_disk
-        labels                          = var.labels
-    }
-  }
-  
-  network_interface {
-    network                             = var.network
-    subnetwork                          = var.subnetwork
-    subnetwork_project                  = var.subnetwork_project
-    network_ip                          = var.network_ip
-    
-    dynamic "access_config" {
-        for_each = var.access_config == false ? toset([]) : toset([1])
-        content {
-            nat_ip                      = var.nat_ip
-            public_ptr_domain_name      = var.public_ptr_domain_name
-            network_tier                = var.network_tier
-    }
-  } 
-    /* access_config {
-        nat_ip                          = var.nat_ip
-        public_ptr_domain_name          = var.public_ptr_domain_name
-        network_tier                    = var.network_tier
-    } */
-
-    dynamic "alias_ip_range" {
-        for_each = var.alias_ip_range == false ? toset([]) : toset([1])
-        content {
-            ip_cidr_range               = var.ip_cidr_range
-            subnetwork_range_name       = var.subnetwork_range_name
-    }
-  }
-    
-    /* alias_ip_range {
-        ip_cidr_range                   = var.ip_cidr_range
-        subnetwork_range_name           = var.subnetwork_range_name
-    } */
-
-    nic_type                            = var.nic_type
-    stack_type                          = var.stack_type
-
-    dynamic "ipv6_access_config" {
-        for_each = var.ipv6_access_config == false ? toset([]) : toset([1])
-        content {
-            public_ptr_domain_name      = var.public_ptr_domain_name
-            network_tier                = var.network_tier
-    }
-  }
-
-    /* ipv6_access_config {
-        public_ptr_domain_name          = var.public_ptr_domain_name
-        network_tier                    = var.network_tier  
-    } */
-    
-    queue_count                         = var.queue_count
-  }
-
-  allow_stopping_for_update             = var.allow_stopping_for_update
-
-  dynamic "attached_disk" {
-        for_each = var.attached_disk == false ? toset([]) : toset([1])
-        content {
-            source                      = var.source_data_disk
-            device_name                 = var.device_name_data_disk
-            mode                        = var.mode_data_disk
-            disk_encryption_key_raw     = var.disk_encryption_key_raw_data_disk
-            kms_key_self_link           = var.kms_key_self_link_data_disk
-    }
-  } 
-  
-  /* attached_disk {
-    source                              = var.source_data_disk
-    device_name                         = var.device_name_data_disk
-    mode                                = var.mode_data_disk
-    disk_encryption_key_raw             = var.disk_encryption_key_raw_data_disk
-    kms_key_self_link                   = var.kms_key_self_link_data_disk
-  } */ 
-
-  can_ip_forward                        = var.can_ip_forward
-  description                           = var.description
-  desired_status                        = var.desired_status
-  deletion_protection                   = var.deletion_protection
-  hostname                              = var.hostname
-
-  dynamic "guest_accelerator" {
-        for_each = var.guest_accelerator == false ? toset([]) : toset([1])
-        content {
-            type                        = var.type_gpu
-            count                       = var.count_gpu
-    }
-  }
-  
-  /* guest_accelerator {
-    type                                = var.type_gpu
-    count                               = var.count_gpu          
-  } */
-
-  labels                                = var.labels
-  metadata                              = var.metadata
-  metadata_startup_script               = var.metadata_startup_script
-  min_cpu_platform                      = var.min_cpu_platform
-  project                               = var.project_id
-
-    dynamic "scheduling" {
-        for_each = var.scheduling == false ? toset([]) : toset([1])
-        content {
-            preemptible                 = var.preemptible
-            automatic_restart           = var.automatic_restart 
-            on_host_maintenance         = var.on_host_maintenance
-
-            node_affinities {
-                key                     = var.key_node_affinities
-                operator                = var.operator_node_affinities
-                values                  = var.values_node_affinities
-            }
-
-            min_node_cpus               = var.min_node_cpus 
-            provisioning_model          = var.provisioning_model 
-            instance_termination_action = var.instance_termination_action
-            
-            max_run_duration {
-                nanos                   = var.nanos
-                seconds                 = var.seconds
-            }
-            
-            maintenance_interval        = var.maintenance_interval
-      }
-    }
-
-    /* scheduling {
-      preemptible                       = var.preemptible
-      automatic_restart                 = var.automatic_restart 
-      on_host_maintenance               = var.on_host_maintenance
-
-      node_affinities {
-        key                             = var.key_node_affinities
-        operator                        = var.operator_node_affinities
-        values                          = var.values_node_affinities
-      }
-
-      min_node_cpus                     = var.min_node_cpus 
-      provisioning_model                = var.provisioning_model 
-      instance_termination_action       = var.instance_termination_action
-
-      max_run_duration {
-        nanos                           = var.nanos
-        seconds                         = var.seconds 
-      }
-      
-    maintenance_interval                = var.maintenance_interval      
-  } */
-
-  dynamic "scratch_disk" {
-        for_each = var.scratch_disk == false ? toset([]) : toset([1])
-        content {
-            interface                   = var.interface
-    }
-  }
-
-  /* scratch_disk {
-    interface                           = var.interface
-  } */
-
-  service_account {
-    email                               = var.email
-    scopes                              = var.scopes
-  }
-
-  dynamic "shielded_instance_config" {
-        for_each = var.shielded_instance_config == false ? toset([]) : toset([1])
-        content {
-            enable_secure_boot          = var.enable_secure_boot
-            enable_vtpm                 = var.enable_vtpm 
-            enable_integrity_monitoring = var.enable_integrity_monitoring
-    }
-  }
-
-  /* shielded_instance_config {
-      enable_secure_boot                = var.enable_secure_boot
-      enable_vtpm                       = var.enable_vtpm 
-      enable_integrity_monitoring       = var.enable_integrity_monitoring 
-  } */
-
-  enable_display                        = var.enable_display
-  resource_policies                     = var.resource_policies
-
-  dynamic "reservation_affinity" {
-        for_each = var.reservation_affinity == false ? toset([]) : toset([1])
-        content {
-            type                        = var.type_reservation_affinity
-            specific_reservation {
-                key                     = var.key_specific_reservation
-                values                  = var.values_specific_reservation
-    }
-    }
-  }
-  
-  /* reservation_affinity {
-    type                                = var.type_reservation_affinity
-    specific_reservation {
-        key                             = var.key_specific_reservation
-        values                          = var.values_specific_reservation
-    }
-  } */
-
-  confidential_instance_config {
-    enable_confidential_compute         = var.enable_confidential_compute
-  }
-
-  dynamic "advanced_machine_features" {
-        for_each = var.advanced_machine_features == false ? toset([]) : toset([1])
-        content {
-            enable_nested_virtualization = var.enable_nested_virtualization
-            threads_per_core             = var.threads_per_core
-            visible_core_count           = var.visible_core_count
-    }
-  }
-
-  /* advanced_machine_features {
-    enable_nested_virtualization        = var.enable_nested_virtualization
-    threads_per_core                    = var.threads_per_core
-    visible_core_count                  = var.visible_core_count
-  } */
-
-  dynamic "network_performance_config" {
-        for_each = var.network_performance_config == false ? toset([]) : toset([1])
-        content {
-            total_egress_bandwidth_tier = var.total_egress_bandwidth_tier
-            }
-        }
-
-  /* network_performance_config {
-    total_egress_bandwidth_tier         = var.total_egress_bandwidth_tier 
-  } */
-  
+  hostname              = var.hostname == "" ? "default" : var.hostname
 }
 
+resource "google_compute_instance" "instance" {
+    provider                                    = google-beta
+    name                                        = var.name == null ? local.hostname : var.name
+    machine_type                                = var.machine_type
+    zone                                        = var.zone
+    tags                                        = var.tags
+    
+    dynamic "boot_disk" {
+        for_each = var.boot_disk[*]
+        content {
+            auto_delete                         = lookup(boot_disk.value, "auto_delete", true)
+            device_name                         = lookup(boot_disk.value, "device_name", null)
+            mode                                = lookup(boot_disk.value, "mode", "READ_WRITE")
+            disk_encryption_key_raw             = boot_disk.value.disk_encryption_key_raw != null ? boot_disk.value.disk_encryption_key_raw : null
+            kms_key_self_link                   = boot_disk.value.kms_key_self_link != null ? boot_disk.value.kms_key_self_link : null
+            source                              = lookup(boot_disk.value, "source", null)
+            
+            dynamic "initialize_params" {
+                for_each = var.boot_disk[*].source != "" ? [] : lookup(boot_disk.value, "initialize_params", [])
+                content {
+                    size                        = lookup(initialize_params.value, "size", 20) 
+                    type                        = lookup(initialize_params.value, "type", "pd-ssd") #lookup(scratch_disk.value, "size", lookup(scratch_disk.value, "type", null) == "local-ssd" ? "375" : null)
+                    image                       = initialize_params.value.image == null ? format("${local.source_image_project}/${local.source_image}") : lookup(initialize_params.value, "image", "ubuntu-os-cloud/ubuntu-2204-lts")
+                    labels                      = lookup(initialize_params.value, "labels", null)
+                }
+            }      
+        }
+    }
 
+    dynamic "network_interface" {
+        for_each = var.network_interface[*]
+        content {
+            network                             = network_interface.value.subnetwork != "" ? null : lookup(network_interface.value, "network", "default")
+            subnetwork                          = network_interface.value.network != "" ? null : lookup(network_interface.value, "subnetwork", "")
+            subnetwork_project                  = lookup(network_interface.value, "subnetwork_project", "")
+            network_ip                          = lookup(network_interface.value, "network_ip", "")
+
+            dynamic "access_config" {
+                for_each = lookup(network_interface.value, "access_config", [])
+                content {
+                    nat_ip                      = lookup(access_config.value, "nat_ip", null)
+                    public_ptr_domain_name      = lookup(access_config.value, "public_ptr_domain_name", null)
+                    network_tier                = lookup(access_config.value, "network_tier", null)
+                }
+            }
+            
+            dynamic "alias_ip_range" {
+                for_each = lookup(network_interface.value, "alias_ip_range", [])
+                content {
+                    ip_cidr_range               = lookup(alias_ip_range.value, "ip_cidr_range", null)
+                    subnetwork_range_name       = lookup(alias_ip_range.value, "subnetwork_range_name", null)
+                }
+            }
+                
+            nic_type                            = var.nic_type
+            stack_type                          = var.stack_type
+
+            dynamic "ipv6_access_config" {
+                for_each = lookup(network_interface.value, "ipv6_access_config", [])
+                content {
+                    public_ptr_domain_name      = lookup(ipv6_access_config.value, "public_ptr_domain_name", null)
+                    network_tier                = lookup(ipv6_access_config.value, "network_tier", null)
+                }
+            }
+    
+            queue_count                         = var.queue_count
+        }
+    }
+    
+    allow_stopping_for_update                   = var.allow_stopping_for_update
+
+    dynamic "attached_disk" {
+        for_each = var.attached_disk[*]
+        content {
+            source                              = lookup(attached_disk.value, "source", null)
+            device_name                         = lookup(attached_disk.value, "device_name", null)
+            mode                                = lookup(attached_disk.value, "mode", "READ_WRITE")
+            disk_encryption_key_raw             = lookup(attached_disk.value, "disk_encryption_key_raw", null)
+            kms_key_self_link                   = lookup(attached_disk.value, "kms_key_self_link", null)
+        }
+    } 
   
+
+    can_ip_forward                              = var.can_ip_forward
+    description                                 = var.description
+    desired_status                              = var.desired_status
+    deletion_protection                         = var.deletion_protection
+    hostname                                    = local.hostname
+
+    dynamic "guest_accelerator" {
+        for_each = var.scheduling[*].on_host_maintenance == "TERMINATE" ? [] : var.guest_accelerator[*]
+        content {
+            type                                = lookup(guest_accelerator.value, "type", "")
+            count                               = lookup(guest_accelerator.value, "count", null)
+        }
+    }
   
-  
-  
+
+    labels                                      = var.labels
+    metadata                                    = var.metadata
+    metadata_startup_script                     = var.metadata_startup_script
+    min_cpu_platform                            = local.shielded_instance ? true : var.min_cpu_platform
+    project                                     = var.project_id
+
+    dynamic "scheduling" {
+        for_each = var.scheduling[*]
+        content {
+            # If provisioning_model is set to SPOT, preemptible should be true and auto_restart should be false
+            preemptible                         = scheduling.value.provisioning_model == "SPOT" ? true : lookup(scheduling.value, "preemptible", false) 
+            on_host_maintenance                 = lookup(scheduling.value, "on_host_maintenance", "MIGRATE")
+                            # automatic_restart must be false when preemptible is true
+            automatic_restart                   = scheduling.value.preemptible == true ? false : lookup(scheduling.value, "automatic_restart", false)
+
+            dynamic "node_affinities" {
+                for_each = lookup(scheduling.value, "node_affinities", [])
+                content {
+                    key                         = lookup(node_affinities.value, "key", "")
+                    operator                    = lookup(node_affinities.value, "operator", "")
+                    values                      = lookup(node_affinities.value, "values", [""])
+                }
+            }
+
+            min_node_cpus                       = lookup(scheduling.value, "min_node_cpus", null)
+            provisioning_model                  = lookup(scheduling.value, "provisioning_model", "") 
+            instance_termination_action         = lookup(scheduling.value, "instance_termination_action", "")
+
+            dynamic "max_run_duration" {
+                for_each = lookup(scheduling.value, "max_run_duration", [])
+                content {
+                    nanos                       = lookup(max_run_duration.value, "nanos", null)
+                    seconds                     = lookup(max_run_duration.value, "seconds", null)
+                }
+            } 
+            
+            maintenance_interval                = scheduling.value.maintenance_interval
+      }
+    }
+
+    dynamic "scratch_disk" {
+        for_each = var.scratch_disk[*]
+        content {
+            interface                           = lookup(scratch_disk.value, "interface", null)
+        }
+    }
+
+    dynamic "service_account" {
+        for_each = var.service_account[*]
+        content {
+            email                               = lookup(service_account.value, "email", null)
+            scopes                              = lookup(service_account.value, "scopes", ["compute-rw", "storage-rw"])
+        }
+    }
+
+    dynamic "shielded_instance_config" {
+        for_each = var.shielded_instance_config[*]
+        content {
+            # allow_stopping_for_update must be set to true or your instance must have a desired_status of TERMINATED in order to update this field.
+            enable_secure_boot                  = local.shielded_instance ? true : lookup(shielded_instance_config.value, "enable_secure_boot", false)
+            enable_vtpm                         = local.shielded_instance ? true : lookup(shielded_instance_config.value, "enable_vtpm", false)
+            enable_integrity_monitoring         = local.shielded_instance ? true : lookup(shielded_instance_config.value, "enable_integrity_monitoring", false)
+        }
+    }
+
+    enable_display                              = local.shielded_instance ? true : var.enable_display
+    resource_policies                           = var.resource_policies
+
+    dynamic "reservation_affinity" {
+        for_each = var.reservation_affinity[*]
+        content {
+            type                                = lookup(reservation_affinity.value, "type", "")
+
+            dynamic "specific_reservation" {
+                for_each = lookup(reservation_affinity.value, "specific_reservation", [])
+                content {
+                    key                         = lookup(specific_reservation.value, "key", "")
+                    values                      = lookup(specific_reservation.value, "values", [""])
+                }
+            } 
+        }
+    }
+
+    dynamic "confidential_instance_config" {
+        for_each = var.confidential_instance_config[*]
+        content {
+            # on_host_maintenance has to be set to TERMINATE or this will fail to create the VM.
+            enable_confidential_compute         = var.scheduling.on_host_maintenance == "MIGRATE" ? false : lookup(confidential_instance_config.value, "enable_confidential_compute", false)
+        }
+    }
+
+    dynamic "advanced_machine_features" {
+        for_each = var.advanced_machine_features[*]
+        content {
+            enable_nested_virtualization        = lookup(advanced_machine_features.value, "enable_nested_virtualization", false)
+            threads_per_core                    = lookup(advanced_machine_features.value, "threads_per_core", null)
+            visible_core_count                  = lookup(advanced_machine_features.value, "visible_core_count", null)
+        }
+    }
+
+    dynamic "network_performance_config" {
+        for_each = var.network_performance_config[*]
+        content {
+            total_egress_bandwidth_tier         = lookup(network_performance_config.value, "total_egress_bandwidth_tier", "")
+        }
+    }
+}

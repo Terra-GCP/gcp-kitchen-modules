@@ -1,11 +1,26 @@
+variable "source_image" {
+  description = "Source disk image. If neither source_image nor source_image_family is specified, defaults to the latest public CentOS image."
+  type        = string
+  default     = ""
+}
+
+variable "source_image_project" {
+  description = "Project where the source image comes from. The default project contains CentOS images."
+  type        = string
+  default     = ""
+}
+
 variable "name" {
-  type = string
+  type = any
   description = "A unique name for the resource, required by GCE. Changing this forces a new resource to be created"
 
 /* <CloudProvider- (1-2)><Region- (3-4)><APPID- (5-13)><ROLE- (14-16)><ENV- (17-20)><OS - 21><COUNT -(22-23)> */
 /* Eg-GEUAPPID001WEBNPRDL01 */
-
-  default = "vm1"
+  default = "geuappid001"
+  validation {
+    condition     = can(regex("^g", var.name))
+    error_message = "The name value must start with 'g'."
+  }
 }
 
 variable "machine_type" {
@@ -26,58 +41,101 @@ variable "tags" {
   default = []
 }
 
-variable "auto_delete_boot_disk" {
-  type = bool
-  description = "Whether the disk will be auto-deleted when the instance is deleted. Defaults to true."
-  default = true
-}
+variable "boot_disk" {
+  description = "The boot disk for the instance."
+  type = list(object(
+    {
+        auto_delete                      = bool
+        device_name                      = string
+        mode                             = string
+        disk_encryption_key_raw          = string
+        kms_key_self_link                = string
+        source                           = string
 
-variable "device_name_boot_disk" {
-  type = string
-  description = "Name with which attached disk will be accessible. On the instance, this device will be /dev/disk/by-id/google-{{device_name}}"
-  default = ""
-}
+        initialize_params                = list(object(
+            {
+                size                     = number
+                type                     = string
+                image                    = string
 
-variable "mode_boot_disk" {
-  type = string
-  description = "The mode in which to attach this disk, either READ_WRITE or READ_ONLY. If not specified, the default is to attach the disk in READ_WRITE mode."
-  default = "READ_WRITE"
-}
+                labels                   = object(
+                    {
+                        app_id           = string 
+                        env              = string
+                        role             = string
+                        cost_center      = string 
+                        business_unit    = string
+                        project_id       = string
+                        service_request1 = string
+                        app_type         = string
+                    }
+                    )
+            }
+            )
+        )
+    }
+    )
+    )
+    
+    default = [
+        {
+            auto_delete                  = true
+            device_name                  = "disk-1"
+            mode                         = "READ_WRITE"
+            disk_encryption_key_raw      = null
+            kms_key_self_link            = null
+            source                       = null
+            
+            initialize_params            = [
+                {
+                    size                 = 20
+                    type                 = "pd-ssd"
+                    image                = "ubuntu-os-cloud/ubuntu-2204-lts"
+                    labels               = {
+                        app_id           = "1234", 
+                        env              = "prod",
+                        role             = "webserver",
+                        cost_center      = "001",
+                        business_unit    ="devops",
+                        project_id       = "prj-xxxxx-id",
+                        service_request1 = "ritmxxxx",
+                        app_type         = "dmz"
+                    }
+                }
+            ]
+        }
+    ]
 
-variable "disk_encryption_key_raw_boot_disk" {
-  type = string
-  description = "A 256-bit [customer-supplied encryption key] (https://cloud.google.com/compute/docs/disks/customer-supplied-encryption), encoded in RFC 4648 base64 to encrypt this disk. Only one of kms_key_self_link and disk_encryption_key_raw may be set."
-  default = null
-}
+    validation {
+    condition = length([
+      for type in var.boot_disk[*].auto_delete : true if contains([
+        true,
+        false
+      ], type)
+    ]) == length(var.boot_disk)
+    error_message = "Boot Disk auto delete must be either 'true' or 'false'."
+    }
 
-variable "kms_key_self_link_boot_disk" {
-  type = string
-  description = "The self_link of the encryption key that is stored in Google Cloud KMS to encrypt this disk. Only one of kms_key_self_link and disk_encryption_key_raw may be set."
-  default = null
-}
+  validation {
+    condition = length([
+      for type in var.boot_disk[*].mode : true if contains([
+        "READ_WRITE",
+        "READ_ONLY"
+      ], type)
+    ]) == length(var.boot_disk)
+    error_message = "Boot Disk Mode must be one of 'READ_WRITE' or 'READ_ONLY'."
+    }
 
-variable "source_boot_disk" {
-  type = string
-  description = "The name or self_link of the existing disk (such as those managed by google_compute_disk) or disk image."
-  default = ""
-}
-
-variable "size_boot_disk" {
-  type = number
-  description = "The size of the image in gigabytes. If not specified, it will inherit the size of its base image."
-  default = 50
-}
-
-variable "type_boot_disk" {
-  type = string
-  description = "The GCE disk type. Such as pd-standard, pd-balanced or pd-ssd."
-  default = "pd-ssd"
-}
-
-variable "image_boot_disk" {
-  type = string
-  description = "The image from which to initialize this disk"
-  default = "ubuntu-os-cloud/ubuntu-2204-lts"
+    validation {
+    condition = length([
+      for type in var.boot_disk[0].initialize_params[*].type : true if contains([
+        "pd-standard",
+        "pd-balanced",
+        "pd-ssd"
+      ], type)
+    ]) == length(var.boot_disk)
+    error_message = "The Disk type can only be set to 'pd-standard' or 'pd-balanced' or 'pd-ssd'."
+    }
 }
 
 variable "labels" {
@@ -96,92 +154,87 @@ variable "labels" {
     }
 }
 
-variable "network" {
-  type = string
-  description = "The name or self_link of the network to attach this interface to. Either network or subnetwork must be provided. If network isn't provided it will be inferred from the subnetwork."
-  default = "default"
-  # vpc name or self_link of the vpc #
-}
+variable "network_interface" {
+  description = "Networks to attach to the instance. This can be specified multiple times. "
+  type = list(object(
+    {
+        network                          = string
+        subnetwork                       = string    
+        subnetwork_project               = string
+        network_ip                       = string
+        access_config                    = list(object(
+            {
+                nat_ip                   = string
+                public_ptr_domain_name   = string
+                network_tier             = string
+            }
+        )
+        )
+        alias_ip_range                   = list(object(
+            {
+                ip_cidr_range            = string
+                subnetwork_range_name    = string
+            }
+        )
+        )
+        ipv6_access_config               = list(object(
+            {
+                public_ptr_domain_name   = string
+                network_tier             = string
+            }
+        )
+        )
+    }
+    )
+    )
 
-variable "subnetwork" {
-  type = string
-  description = "The name or self_link of the subnetwork to attach this interface to. Either network or subnetwork must be provided."
-  default = ""
-  # subnetwork name or self_link of the vpc #
-}
-
-variable "subnetwork_project" {
-  type = string
-  description = "The project in which the subnetwork belongs."
-  default = ""
-}
-
-variable "network_ip" {
-  type = string
-  description = "The private IP address to assign to the instance. If empty, the address will be automatically assigned."
-  default = ""
-  # 10.x.x.x/32 #
-}
-
-variable "access_config" {
-  type = bool
-  description = "Enable/Disable Access Config Block"
-  default = false
-}
-
-variable "nat_ip" {
-  type = string
-  description = "The IP address that will be 1:1 mapped to the instance's network ip. If not given, one will be generated."
-  default = ""
-  # 34.x.x.x/32 #
-}
-
-variable "public_ptr_domain_name" {
-  type = string
-  description = "The DNS domain name for the public PTR record. To set this field on an instance, you must be verified as the owner of the domain."
-  default = ""
-}
-
-variable "network_tier" {
-  type = string
-  description = "The networking tier used for configuring this instance. This field can take the following values: PREMIUM, FIXED_STANDARD or STANDARD."
-  default = "STANDARD"
-}
-
-variable "alias_ip_range" {
-  type = bool
-  description = "Enable/Disable Alias IP Range Block"
-  default = false
-}
-
-variable "ip_cidr_range" {
-  type = string
-  description = "The IP CIDR range represented by this alias IP range. This IP CIDR range must belong to the specified subnetwork and cannot contain IP addresses reserved by system or used by other network interfaces. This range may be a single IP address (e.g. 10.2.3.4), a netmask (e.g. /24) or a CIDR format string (e.g. 10.1.2.0/24)."
-  default = "10.0.0.0/0"
-}
-
-variable "subnetwork_range_name" {
-  type = string
-  description = "The subnetwork secondary range name specifying the secondary range from which to allocate the IP CIDR range for this alias IP range. If left unspecified, the primary range of the subnetwork will be used."
-  default = ""
+  default = [
+    {
+        network                          = "default"
+        subnetwork                       = ""    
+        subnetwork_project               = ""
+        network_ip                       = "" 
+        access_config                    = [
+            /* {
+            nat_ip                       = ""
+            public_ptr_domain_name       = ""
+            network_tier                 = ""
+            } */
+        ]
+        alias_ip_range                   = [
+            /* {
+            ip_cidr_range                = "10.0.0.0/0"
+            subnetwork_range_name        = ""
+            } */
+        ]
+        ipv6_access_config               = [
+            /* {
+            public_ptr_domain_name       = ""
+            network_tier                 = ""
+            } */
+        ]          
+    }
+    ]
 }
 
 variable "nic_type" {
   type = string
   description = "The type of vNIC to be used on this interface. Possible values: GVNIC, VIRTIO_NET."
   default = "GVNIC"
+  validation {
+    condition     = can(regex("^(GVNIC|VIRTIO_NET|null)$", var.nic_type))
+    error_message = "The nic type can only be set to [GVNIC|VIRTIO_NET]."
+  }
 }
 
 variable "stack_type" {
   type = string
   description = "The stack type for this network interface to identify whether the IPv6 feature is enabled or not. Values are IPV4_IPV6 or IPV4_ONLY. If not specified, IPV4_ONLY will be used."
-  default = ""
-}
-
-variable "ipv6_access_config" {
-  type = bool
-  description = "Enable/Disable IPV6 Access Config Block"
-  default = false
+  default = "IPV4_ONLY"
+  validation {
+    condition     = can(regex("^(IPV4_ONLY|IPV4_IPV6|null)$", var.stack_type))
+    error_message = "The stack type can only be set to [IPV4_ONLY|IPV4_IPV6]."
+  }
 }
 
 variable "queue_count" {
@@ -194,48 +247,54 @@ variable "allow_stopping_for_update" {
     type = bool
     description = "If true, allows Terraform to stop the instance to update its properties. If you try to update a property that requires stopping the instance without setting this field, the update will fail."
     default = true
+
+    validation {
+    condition     = contains([true, false], var.allow_stopping_for_update)
+    error_message = "Valid values for var: allow_stopping_for_update are (true, false)."
+    } 
 }
 
 variable "attached_disk" {
-  type = bool
-  description = "Enable/Disable Attach Disk Block"
-  default = false
-}
+  description = "Additional disks to attach to the instance. Can be repeated multiple times for multiple disks."
+  type = list(object({
+    source                               = string
+    device_name                          = string
+    mode                                 = string
+    disk_encryption_key_raw              = string
+    kms_key_self_link                    = string 
+  }))
 
-variable "source_data_disk" {
-    type = string
-    description = "The name or self_link of the disk to attach to this instance."
-    default = ""
-}
+  default = [
+    /* {
+        source                           = null
+        device_name                      = "disk-1"
+        mode                             = "READ_WRITE"
+        disk_encryption_key_raw          = null
+        kms_key_self_link                = null      
+    } */
+  ]
 
-variable "device_name_data_disk" {
-    type = string
-    description = "Name with which the attached disk will be accessible under /dev/disk/by-id/google-*"
-    default = ""
-}
-
-variable "mode_data_disk" {
-  type = string
-  description = "The mode in which to attach this disk, either READ_WRITE or READ_ONLY. If not specified, the default is to attach the disk in READ_WRITE mode."
-  default = "READ_WRITE"
-}
-
-variable "disk_encryption_key_raw_data_disk" {
-  type = string
-  description = "A 256-bit [customer-supplied encryption key] (https://cloud.google.com/compute/docs/disks/customer-supplied-encryption), encoded in RFC 4648 base64 to encrypt this disk. Only one of kms_key_self_link and disk_encryption_key_raw may be set."
-  default = ""
-}
-
-variable "kms_key_self_link_data_disk" {
-  type = string
-  description = "The self_link of the encryption key that is stored in Google Cloud KMS to encrypt this disk. Only one of kms_key_self_link and disk_encryption_key_raw may be set."
-  default = ""
+  validation {
+    condition = length([
+      for type in var.attached_disk[*].mode : true if contains([
+        "READ_WRITE",
+        "READ_ONLY",
+            null
+      ], type)
+    ]) == length(var.attached_disk)
+    error_message = "Disk Mode must be one of 'READ_WRITE' or 'READ_ONLY'."
+    }
 }
 
 variable "can_ip_forward" {
     type = bool
     default = false
     description = "Whether to allow sending and receiving of packets with non-matching source or destination IPs. This defaults to false."
+
+    validation {
+    condition     = contains([true, false], var.can_ip_forward)
+    error_message = "Valid values for var: can_ip_forward are (true, false)."
+    } 
 }
 
 variable "description" {
@@ -248,12 +307,21 @@ variable "desired_status" {
     type = string
     default = "RUNNING"
     description = "Desired status of the instance. Either RUNNING or TERMINATED."
+    
+    validation {
+    condition     = contains(["RUNNING", "TERMINATED", null], var.desired_status)
+    error_message = "Valid values for var: desired_status are (RUNNING, TERMINATED)."
+    } 
 }
 
 variable "deletion_protection" {
     type = bool
-    default = true
+    default = false
     description = "Enable deletion protection on this instance. Defaults to false. Note: you must disable deletion protection before removing the resource"
+    validation {
+        condition     = contains([true, false], var.deletion_protection)
+        error_message = "Valid values for var: deletion_protection are (true, false)."
+    } 
 }
 
 variable "hostname" {
@@ -266,21 +334,18 @@ variable "hostname" {
 }
 
 variable "guest_accelerator" {
-  type = bool
-  description = "Enable/Disable guest accelerator Block"
-  default = false
-}
+  description = "List of the type and count of accelerator cards attached to the instance."
+  type = list(object({
+    type                                 = string
+    count                                = number
+  }))
 
-variable "type_gpu" {
-    type = string
-    default = "null"
-    description = "The accelerator type resource to expose to this instance. E.g. nvidia-tesla-k80."
-}
-
-variable "count_gpu" {
-    type = number
-    default = null
-    description = "The number of the guest accelerator cards exposed to this instance."
+  default = [
+    /* {
+        type                             = ""
+        count                            = null
+    } */
+    ]
 }
 
 variable "metadata" {
@@ -305,139 +370,213 @@ variable "project_id" {
   type = string
   description = "The ID of the project in which the resource belongs. If it is not provided, the provider project is used."
   default = "prj-o-tf-sa"
+  validation {
+      condition = length(var.project_id) >= 6 && length(var.project_id) <=32
+      error_message = "The Project ID to be used must be 6 to 30 characters in length."
+    }
 }
 
 variable "scheduling" {
-  type = bool
-  description = "Enable/Disable Scheduling Block"
-  default = false
-}
+  description = "The scheduling strategy to use."
+  type = list(object({
+    preemptible                          = bool 
+    on_host_maintenance                  = string
+    automatic_restart                    = bool
 
-variable "preemptible" {
-    type = bool
-    default = false
-    description = "Specifies if the instance is preemptible. If this field is set to true, then automatic_restart must be set to false. Defaults to false."
-}
+    node_affinities                      = list(object(
+        {
+            key                          = string
+            operator                     = string
+            values                       = list(string)
+        }
+        )
+        )
 
-variable "automatic_restart" {
-    type = bool
-    default = false
-    description = "Specifies if the instance should be restarted if it was terminated by Compute Engine (not a user). Defaults to true."
-}
+    min_node_cpus                        = number 
+    provisioning_model                   = string 
+    instance_termination_action          = string
 
-variable "on_host_maintenance" {
-    type = string
-    default = "MIGRATE"
-    description = "Describes maintenance behavior for the instance. Can be MIGRATE or TERMINATE"
-}
+    max_run_duration                     = list(object(
+        {
+            nanos                        = number
+            seconds                      = number
+        }
+        )
+        )
+            
+    maintenance_interval                 = string
+    }
+    )
+    )
 
-variable "key_node_affinities" {
-    type = string
-    default = ""
-    description = "The key for the node affinity label."
-}
+  default = [
+    /* {
+        preemptible                      = false 
+        on_host_maintenance              = "MIGRATE"
+        automatic_restart                = false
 
-variable "operator_node_affinities" {
-    type = string
-    default = ""
-    description = "The operator. Can be IN for node-affinities or NOT_IN for anti-affinities."
-}
+        node_affinities                  = [
+            {
+                key                      = ""
+                operator                 = ""
+                values                   = [""]
+            }
+        ]
 
-variable "values_node_affinities" {
-    type = list(string)
-    default = [""]
-    description = "The values for the node affinity label."
-}
+        min_node_cpus                    = null 
+        provisioning_model               = "" 
+        instance_termination_action      = ""
 
-variable "min_node_cpus" {
-    type = number
-    default = null
-    description = "The minimum number of virtual CPUs this instance will consume when running on a sole-tenant node."
-}
-
-variable "provisioning_model" {
-    type = string
-    default = ""
-    description = "Describe the type of preemptible VM. This field accepts the value STANDARD or SPOT. If the value is STANDARD, there will be no discount. If this is set to SPOT, preemptible should be true and auto_restart should be false"
-}
-
-variable "instance_termination_action" {
-    type = string
-    default = ""
-    description = "Describe the type of termination action for VM. Can be STOP or DELETE."
-}
-
-variable "nanos" {
-    type = number
-    default = null
-    description = "Span of time that's a fraction of a second at nanosecond resolution. Durations less than one second are represented with a 0 seconds field and a positive nanos field. Must be from 0 to 999,999,999 inclusive."
-}
-
-variable "seconds" {
-    type = number
-    default = null
-    description = "Span of time at a resolution of a second. Must be from 0 to 315,576,000,000 inclusive. Note: these bounds are computed from: 60 sec/min * 60 min/hr * 24 hr/day * 365.25 days/year * 10000 years."
-}
-
-variable "maintenance_interval" {
-    type = string
-    default = ""
-    description = "Specifies the frequency of planned maintenance events. The accepted values are: PERIODIC."
+        max_run_duration                 = [
+            {
+                nanos                    = null
+                seconds                  = null
+            }
+        ]
+            
+        maintenance_interval             = ""
+    } */
+    ]
+    
+    validation {
+    condition = length([
+      for type in var.scheduling[*].preemptible : true if contains([
+        true,
+        false
+      ], type)
+    ]) == length(var.scheduling)
+    error_message = "Preemptible must be set to 'true' or 'false'."
+    }
+    validation {
+    condition = length([
+      for type in var.scheduling[*].automatic_restart : true if contains([
+        true,
+        false
+      ], type)
+    ]) == length(var.scheduling)
+    error_message = "Preemptible must be set to 'true' or 'false'."
+    }
+    validation {
+    condition = length([
+      for type in var.scheduling[*].provisioning_model : true if contains([
+        "STOP",
+        "DELETE",
+      ], type)
+    ]) == length(var.scheduling)
+    error_message = "instance_termination_action must be set to 'STOP' or 'DELETE'."
+    }
+    validation {
+    condition = length([
+      for type in var.scheduling[*].instance_termination_action : true if contains([
+        "STANDARD",
+        "SPOT",
+      ], type)
+    ]) == length(var.scheduling)
+    error_message = "Instance Termination Action must be set to 'STANDARD' or 'SPOT'."
+    }
 }
 
 variable "scratch_disk" {
-  type = bool
-  description = "Enable/Disable Scratch Disk Block"
-  default = false
+  description = "Scratch disks to attach to the instance. This can be specified multiple times for multiple scratch disks."
+  type = list(object(
+    {
+    interface                            = string
+    }
+    )
+    )
+
+  default = [
+    /* {
+        interface                        = null
+    } */
+  ]
+  validation {
+    condition = length([
+      for type in var.scratch_disk[*].interface : true if contains([
+        "SCSI",
+        "NVME",
+        "null"
+      ], type)
+    ]) == length(var.scratch_disk)
+    error_message = "The scratch disk interface can only be set to SCSI or NVME."
+    }
 }
 
-variable "interface" {
-    type = string
-    default = ""
-    description = "The disk interface to use for attaching this disk; either SCSI or NVME."
-}
+variable "service_account" {
+  description = "Service account to attach to the instance."
+  type = list(object(
+    {
+        email                            = string
+        scopes                           = list(string)
+    }
+    )
+    )
 
-variable "email" {
-    type = string
-    default = ""
-    description = "The service account e-mail address. If not given, the default Google Compute Engine service account is used. "
-}
-
-variable "scopes" {
-    type = list(string)
-    default = ["compute-rw", "storage-rw"]
-    description = "A list of service scopes. Both OAuth2 URLs and gcloud short names are supported. To allow full access to all Cloud APIs, use the cloud-platform scope."
+  default = [
+    /* {
+        email                            = ""
+        scopes                           = ["compute-rw", "storage-rw"]
+    } */
+    ]
 }
 
 variable "shielded_instance_config" {
-  type = bool
-  description = "Enable/Disable Shielded Instance Config Block"
-  default = false
-}
+  description = "Enable Shielded VM on this instance. Shielded VM provides verifiable integrity to prevent against malware and rootkits. Defaults to disabled."
+  type = list(object(
+    {
+        enable_secure_boot               = bool
+        enable_vtpm                      = bool 
+        enable_integrity_monitoring      = bool
+    }
+    )
+    )
 
-variable "enable_secure_boot" {
-    type = bool
-    default = false
-    description = "Verify the digital signature of all boot components, and halt the boot process if signature verification fails. Defaults to false."
-}
-
-variable "enable_vtpm" {
-    type = bool
-    default = false
-    description = "Use a virtualized trusted platform module, which is a specialized computer chip you can use to encrypt objects like keys and certificates. Defaults to true."
-}
-
-variable "enable_integrity_monitoring" {
-    type = bool
-    default = false
-    description = "ompare the most recent boot measurements to the integrity policy baseline and return a pair of pass/fail results depending on whether they match or not. Defaults to true."
+  default = [
+    /* {
+        enable_secure_boot               = false
+        enable_vtpm                      = false
+        enable_integrity_monitoring      = false
+    } */
+    ]
+    validation {
+    condition = length([
+      for type in var.shielded_instance_config[*].enable_secure_boot : true if contains([
+        true,
+        false
+      ], type)
+    ]) == length(var.shielded_instance_config)
+    error_message = "Enable Secure Boot must be set to 'true' or 'false'."
+    }
+    validation {
+    condition = length([
+      for type in var.shielded_instance_config[*].enable_vtpm : true if contains([
+        true,
+        false
+      ], type)
+    ]) == length(var.shielded_instance_config)
+    error_message = "Enable vTPM must be set to 'true' or 'false'."
+    }
+    validation {
+    condition = length([
+      for type in var.shielded_instance_config[*].enable_integrity_monitoring : true if contains([
+        true,
+        false
+      ], type)
+    ]) == length(var.shielded_instance_config)
+    error_message = "Enable Integrity Monitoring must be set to 'true' or 'false'."
+    }
 }
 
 variable "enable_display" {
     type = bool
     default = false
     description = "Enable Virtual Displays on this instance. Note: allow_stopping_for_update must be set to true or your instance must have a desired_status of TERMINATED in order to update this field."
+    validation {
+        condition     = contains([true, false], var.enable_display)
+        error_message = "Valid values for var: enable_display are (true, false)."
+    } 
 }
+
 
 variable "resource_policies" {
     type = list(string)
@@ -446,67 +585,91 @@ variable "resource_policies" {
 }
 
 variable "reservation_affinity" {
-  type = bool
-  description = "Enable/Disable Reservation Affinity Block"
-  default = false
+  description = "Specifies the reservations that this instance can consume from."
+  type = list(object(
+    {
+        type                             = string
+        specific_reservation             = list(object(
+            {
+                key                      = string
+                values                   = list(string)
+            }
+            )
+            )
+    }
+    )
+    )
+
+  default = [
+    /* {
+        type                             = ""
+        specific_reservation             = [
+            {
+                key                      = ""
+                values                   = [""]
+            }
+        ]
+    } */
+    ]
 }
 
-variable "type_reservation_affinity" {
-    type = string
-    default = ""
-    description = "The type of reservation from which this instance can consume resources."
-}
+variable "confidential_instance_config" {
+  description = "Enable Confidential Mode on this VM."
+  type = list(object(
+    {
+        enable_confidential_compute      = bool
+    }
+    )
+    )
 
-variable "key_specific_reservation" {
-    type = string
-    default = ""
-    description = "Corresponds to the label key of a reservation resource. To target a SPECIFIC_RESERVATION by name, specify compute.googleapis.com/reservation-name as the key and specify the name of your reservation as the only value."
-}
-
-variable "values_specific_reservation" {
-    type = list(string)
-    default = [""]
-    description = "Corresponds to the label values of a reservation resource."
-}
-
-variable "enable_confidential_compute" {
-    type = bool
-    default = false
-    description = "Defines whether the instance should have confidential compute enabled. on_host_maintenance has to be set to TERMINATE or this will fail to create the VM."
+  default = [
+    /* {
+        enable_confidential_compute      = false
+    } */
+    ]
 }
 
 variable "advanced_machine_features" {
-  type = bool
-  description = "Enable/Disable Advanced Machine Features Block"
-  default = false
-}
+  description = "Configure Nested Virtualisation and Simultaneous Hyper Threading on this VM."
+  type = list(object(
+    {
+        enable_nested_virtualization     = bool
+        threads_per_core                 = number
+        visible_core_count               = number
+    }
+    )
+    )
 
-variable "enable_nested_virtualization" {
-    type = bool
-    default = false
-    description = "Defines whether the instance should have nested virtualization enabled. Defaults to false."
-}
-
-variable "threads_per_core" {
-    type = number
-    default = null
-    description = "The number of threads per physical core. To disable simultaneous multithreading (SMT) set this to 1."
-}
-
-variable "visible_core_count" {
-    type = number
-    default = null
-    description = "The number of physical cores to expose to an instance. visible cores info (VC)."
+  default = [
+    /* {
+        enable_nested_virtualization     = false
+        threads_per_core                 = null
+        visible_core_count               = null
+    } */
+    ]
 }
 
 variable "network_performance_config" {
-  type = bool
-  description = "Enable/Disable Network Performance Config Block"
-  default = false
-}
+  description = "Configures network performance settings for the instance."
+  type = list(object(
+    {
+        total_egress_bandwidth_tier      = string
+    }
+    )
+    )
 
-variable "total_egress_bandwidth_tier" {
-    type = string
-    default = ""
-    description = "The egress bandwidth tier to enable. Possible values: TIER_1, DEFAULT"
+  default = [
+    /* {
+        total_egress_bandwidth_tier     = ""
+    } */
+    ]
+    validation {
+    condition = length([
+      for type in var.network_performance_config[*].total_egress_bandwidth_tier : true if contains([
+        "TIER_1", 
+        "DEFAULT"
+      ], type)
+    ]) == length(var.network_performance_config)
+    error_message = "Total Egress Bandwidth tier for network performance config must be set to 'TIER_1' or 'DEFAULT'."
+    }
 }
